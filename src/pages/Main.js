@@ -17,6 +17,7 @@ import {
 } from "expo-location";
 
 import api from "../services/Api";
+import { connect, disconnect, subscribeNewDevs } from "../services/socket";
 
 export default function Main({ navigation }) {
   const [currentRegion, setCurrentRegion] = useState(null);
@@ -45,8 +46,17 @@ export default function Main({ navigation }) {
     loadInitialPosition();
   }, []);
 
+  useEffect(() => {
+    subscribeNewDevs(dev => setDevs([...devs, dev]));
+  }, [devs]);
+
   if (!currentRegion) {
     return null;
+  }
+
+  function setupWebsocket() {
+    const { latitude, longitude } = currentRegion;
+    connect(latitude, longitude, techs);
   }
 
   async function loadDevs() {
@@ -60,9 +70,9 @@ export default function Main({ navigation }) {
       }
     });
 
-    console.log(response.data);
-
     setDevs(response.data);
+
+    setupWebsocket();
   }
 
   async function handleRegionChanged(region) {
